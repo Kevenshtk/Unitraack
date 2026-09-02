@@ -183,39 +183,39 @@ src/
 ## 4. Inventário dos Components
 
 ### 4.1. Componentes Globais (`src/components/`)
-* [WebcamModal.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/components/WebcamModal.tsx) (123 linhas): Modal com controle direto da API `navigator.mediaDevices.getUserMedia`, permitindo alternar câmeras e capturar frames para canvas em formato JPEG Base64.
-* [SignaturePad.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/components/SignaturePad.tsx) (60 linhas): Componente baseado em `react-signature-canvas` com ações de limpar e salvar. *(Aparentemente não utilizado no momento)*.
+* [WebcamModal.tsx](file:/Unitraack/frontend/src/components/WebcamModal.tsx) (123 linhas): Modal com controle direto da API `navigator.mediaDevices.getUserMedia`, permitindo alternar câmeras e capturar frames para canvas em formato JPEG Base64.
+* [SignaturePad.tsx](file:/Unitraack/frontend/src/components/SignaturePad.tsx) (60 linhas): Componente baseado em `react-signature-canvas` com ações de limpar e salvar. *(Aparentemente não utilizado no momento)*.
 
 ### 4.2. Componentes de Autenticação (`src/features/auth/components/`)
-* [ParticleBackground.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/auth/components/ParticleBackground.tsx) (131 linhas): Efeito visual de partículas interativas desenhadas em elemento HTML `<canvas>` com cálculo de distâncias e física vetorial.
-* [RoleDispatcher.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/auth/components/RoleDispatcher.tsx) (84 linhas): Switch de roteamento que avalia `profile.role` e renderiza o dashboard correspondente (`SuperAdminDashboard`, `GestorDashboard`, `LiderDashboard`, `PortariaDashboard`, `TerceirizadaDashboard`), aplicando também regras de redirecionamento de URL.
+* [ParticleBackground.tsx](file:/Unitraack/frontend/src/features/auth/components/ParticleBackground.tsx) (131 linhas): Efeito visual de partículas interativas desenhadas em elemento HTML `<canvas>` com cálculo de distâncias e física vetorial.
+* [RoleDispatcher.tsx](file:/Unitraack/frontend/src/features/auth/components/RoleDispatcher.tsx) (84 linhas): Switch de roteamento que avalia `profile.role` e renderiza o dashboard correspondente (`SuperAdminDashboard`, `GestorDashboard`, `LiderDashboard`, `PortariaDashboard`, `TerceirizadaDashboard`), aplicando também regras de redirecionamento de URL.
 
 ### 4.3. Componentes de Monitoramento e Gestão (`src/features/monitoring/components/`)
-* [InteractiveMap.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/monitoring/components/InteractiveMap.tsx) (750 linhas): Componente interativo que renderiza a planta industrial em SVG, permitindo arrastar setores, redimensionar, controlar zoom/pan, exibir tooltips e salvar layouts via API.
-* [MonitoringDashboard.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/monitoring/components/MonitoringDashboard.tsx) (418 linhas): Visualização em gavetas (accordions) da hierarquia de setores e subsetores com a listagem de materiais ativos em cada área.
-* [ThirdPartiesReport.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/monitoring/components/ThirdPartiesReport.tsx) (247 linhas): Exibição de gráficos de barras e pizza via `recharts` sobre o volume de terceirizadas e materiais, com exportação para PDF via captura de imagem (`html-to-image` + `jspdf`).
+* [InteractiveMap.tsx](file:/Unitraack/frontend/src/features/monitoring/components/InteractiveMap.tsx) (750 linhas): Componente interativo que renderiza a planta industrial em SVG, permitindo arrastar setores, redimensionar, controlar zoom/pan, exibir tooltips e salvar layouts via API.
+* [MonitoringDashboard.tsx](file:/Unitraack/frontend/src/features/monitoring/components/MonitoringDashboard.tsx) (418 linhas): Visualização em gavetas (accordions) da hierarquia de setores e subsetores com a listagem de materiais ativos em cada área.
+* [ThirdPartiesReport.tsx](file:/Unitraack/frontend/src/features/monitoring/components/ThirdPartiesReport.tsx) (247 linhas): Exibição de gráficos de barras e pizza via `recharts` sobre o volume de terceirizadas e materiais, com exportação para PDF via captura de imagem (`html-to-image` + `jspdf`).
 
 ### 4.4. Componentes Operacionais e de Auditoria (`src/features/requests/components/`)
-* [AuditTimeline.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/requests/components/dashboard/audit/AuditTimeline.tsx) (685 linhas): Linha do tempo de movimentações de uma empresa parceira com filtros avançados e geração imperativa de relatório PDF via `jspdf` e `jspdf-autotable`.
-* [PendingApprovals.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/requests/components/dashboard/PendingApprovals.tsx) (330 linhas): Lista de requisições autorizadas pelos líderes que aguardam validação de portaria, com modais inlined de visualização de dados da empresa e de materiais.
-* [TransferModal.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/requests/components/dashboard/TransferModal.tsx) (304 linhas): Modal para transferência de equipamentos entre setores, permitindo anexar fotos e matrícula do responsável.
-* [DashboardSidebar.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/requests/components/dashboard/DashboardSidebar.tsx) (169 linhas): Barra lateral do Gestor de Segurança com submenu expansível de setores pais.
-* [LiderSidebar.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/requests/components/dashboard/LiderSidebar.tsx) (113 linhas): Barra lateral de navegação exclusiva para Líderes de Setor.
-* [AcceptModal.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/requests/components/dashboard/AcceptModal.tsx) (114 linhas): Modal para o líder confirmar o recebimento de material transferido para o seu setor.
-* [AuditSection.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/requests/components/AuditSection.tsx) (111 linhas): Componente coordenador que alterna entre a lista de empresas e a timeline de auditoria.
-* [AuditThirdPartyList.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/requests/components/dashboard/audit/AuditThirdPartyList.tsx) (104 linhas): Listagem com busca das empresas terceirizadas cadastradas para auditoria.
-* [AdminSidebar.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/requests/components/dashboard/AdminSidebar.tsx) (76 linhas): Componente com lista de diretores e status online. *(Aparentemente não utilizado)*.
-* [MobileNav.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/requests/components/dashboard/MobileNav.tsx) (62 linhas): Barra de navegação inferior flutuante para dispositivos móveis.
-* [DashboardStats.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/requests/components/dashboard/DashboardStats.tsx) (41 linhas): Três cards de métricas (Pendentes, Ativos na Planta, Finalizados).
-* [DashboardHeader.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/requests/components/dashboard/DashboardHeader.tsx) (32 linhas): Cabeçalho superior com título dinâmico por seção e botão de perfil/sair.
+* [AuditTimeline.tsx](file:/Unitraack/frontend/src/features/requests/components/dashboard/audit/AuditTimeline.tsx) (685 linhas): Linha do tempo de movimentações de uma empresa parceira com filtros avançados e geração imperativa de relatório PDF via `jspdf` e `jspdf-autotable`.
+* [PendingApprovals.tsx](file:/Unitraack/frontend/src/features/requests/components/dashboard/PendingApprovals.tsx) (330 linhas): Lista de requisições autorizadas pelos líderes que aguardam validação de portaria, com modais inlined de visualização de dados da empresa e de materiais.
+* [TransferModal.tsx](file:/Unitraack/frontend/src/features/requests/components/dashboard/TransferModal.tsx) (304 linhas): Modal para transferência de equipamentos entre setores, permitindo anexar fotos e matrícula do responsável.
+* [DashboardSidebar.tsx](file:/Unitraack/frontend/src/features/requests/components/dashboard/DashboardSidebar.tsx) (169 linhas): Barra lateral do Gestor de Segurança com submenu expansível de setores pais.
+* [LiderSidebar.tsx](file:/Unitraack/frontend/src/features/requests/components/dashboard/LiderSidebar.tsx) (113 linhas): Barra lateral de navegação exclusiva para Líderes de Setor.
+* [AcceptModal.tsx](file:/Unitraack/frontend/src/features/requests/components/dashboard/AcceptModal.tsx) (114 linhas): Modal para o líder confirmar o recebimento de material transferido para o seu setor.
+* [AuditSection.tsx](file:/Unitraack/frontend/src/features/requests/components/AuditSection.tsx) (111 linhas): Componente coordenador que alterna entre a lista de empresas e a timeline de auditoria.
+* [AuditThirdPartyList.tsx](file:/Unitraack/frontend/src/features/requests/components/dashboard/audit/AuditThirdPartyList.tsx) (104 linhas): Listagem com busca das empresas terceirizadas cadastradas para auditoria.
+* [AdminSidebar.tsx](file:/Unitraack/frontend/src/features/requests/components/dashboard/AdminSidebar.tsx) (76 linhas): Componente com lista de diretores e status online. *(Aparentemente não utilizado)*.
+* [MobileNav.tsx](file:/Unitraack/frontend/src/features/requests/components/dashboard/MobileNav.tsx) (62 linhas): Barra de navegação inferior flutuante para dispositivos móveis.
+* [DashboardStats.tsx](file:/Unitraack/frontend/src/features/requests/components/dashboard/DashboardStats.tsx) (41 linhas): Três cards de métricas (Pendentes, Ativos na Planta, Finalizados).
+* [DashboardHeader.tsx](file:/Unitraack/frontend/src/features/requests/components/dashboard/DashboardHeader.tsx) (32 linhas): Cabeçalho superior com título dinâmico por seção e botão de perfil/sair.
 
 ### 4.5. Componentes de Equipe e Setores (`src/features/admin/components/`)
-* [MemberList.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/admin/components/dashboard/team/MemberList.tsx) (309 linhas): Listagem da equipe da usina (Líderes e Portaria) com modais para edição, alteração de status ativo/inativo e exclusão.
-* [ManualRegisterForm.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/admin/components/dashboard/team/ManualRegisterForm.tsx) (236 linhas): Formulário de cadastro direto de colaboradores internos sem uso de convite.
-* [SectorManagement.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/admin/components/dashboard/team/SectorManagement.tsx) (204 linhas): Cadastro e exclusão de Setores Principais e Subsetores da usina.
-* [InviteGenerator.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/admin/components/dashboard/team/InviteGenerator.tsx) (158 linhas): Gerador de links de convite parametrizados por setor e role.
-* [TeamCommon.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/admin/components/dashboard/team/TeamCommon.tsx) (121 linhas): Componentes utilitários de formulário (`TabButton`, `InputGroup`, `CustomSelect`, `Modal`).
-* [TeamManagement.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/admin/components/TeamManagement.tsx) (76 linhas): Tab container que agrupa `ManualRegisterForm`, `InviteGenerator`, `MemberList` e `SectorManagement`.
+* [MemberList.tsx](file:/Unitraack/frontend/src/features/admin/components/dashboard/team/MemberList.tsx) (309 linhas): Listagem da equipe da usina (Líderes e Portaria) com modais para edição, alteração de status ativo/inativo e exclusão.
+* [ManualRegisterForm.tsx](file:/Unitraack/frontend/src/features/admin/components/dashboard/team/ManualRegisterForm.tsx) (236 linhas): Formulário de cadastro direto de colaboradores internos sem uso de convite.
+* [SectorManagement.tsx](file:/Unitraack/frontend/src/features/admin/components/dashboard/team/SectorManagement.tsx) (204 linhas): Cadastro e exclusão de Setores Principais e Subsetores da usina.
+* [InviteGenerator.tsx](file:/Unitraack/frontend/src/features/admin/components/dashboard/team/InviteGenerator.tsx) (158 linhas): Gerador de links de convite parametrizados por setor e role.
+* [TeamCommon.tsx](file:/Unitraack/frontend/src/features/admin/components/dashboard/team/TeamCommon.tsx) (121 linhas): Componentes utilitários de formulário (`TabButton`, `InputGroup`, `CustomSelect`, `Modal`).
+* [TeamManagement.tsx](file:/Unitraack/frontend/src/features/admin/components/TeamManagement.tsx) (76 linhas): Tab container que agrupa `ManualRegisterForm`, `InviteGenerator`, `MemberList` e `SectorManagement`.
 
 ---
 
@@ -236,9 +236,9 @@ src/
 ## 6. Inventário dos Services / API
 
 ### 6.1. Services Formais
-* [authService.ts](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/auth/api/authService.ts) (`features/auth/api/`): Encapsula métodos do Supabase Auth (`getSession`, `onAuthStateChange`, `signInWithOtp`, `signInWithPassword`, `signOut`).
-* [tenantService.ts](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/auth/api/tenantService.ts) (`features/auth/api/`): Executa `api.get('/auth/tenant-info?slug=...')` com header `X-Tenant-Slug`.
-* [dashboardService.ts](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/requests/api/dashboardService.ts) (`features/requests/api/`): Métodos para endpoints `/gestor/monitoring`, `/gestor/dashboard`, `/gestor/approve/:id`, `/gestor/reject/:id`, `/gestor/material-position`, `/gestor/map-layout`, `/gestor/third-parties`.
+* [authService.ts](file:/Unitraack/frontend/src/features/auth/api/authService.ts) (`features/auth/api/`): Encapsula métodos do Supabase Auth (`getSession`, `onAuthStateChange`, `signInWithOtp`, `signInWithPassword`, `signOut`).
+* [tenantService.ts](file:/Unitraack/frontend/src/features/auth/api/tenantService.ts) (`features/auth/api/`): Executa `api.get('/auth/tenant-info?slug=...')` com header `X-Tenant-Slug`.
+* [dashboardService.ts](file:/Unitraack/frontend/src/features/requests/api/dashboardService.ts) (`features/requests/api/`): Métodos para endpoints `/gestor/monitoring`, `/gestor/dashboard`, `/gestor/approve/:id`, `/gestor/reject/:id`, `/gestor/material-position`, `/gestor/map-layout`, `/gestor/third-parties`.
 
 ### 6.2. Mapeamento de Chamadas por Mecanismo
 
@@ -320,7 +320,7 @@ Existem apenas **3 Custom Hooks** em todo o código-fonte:
 ## 9. Inventário de Rotas e Guards
 
 ### 9.1. Arquivo de Rotas
-* **Responsável**: [MainRoutes.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/routes/MainRoutes.tsx)
+* **Responsável**: [MainRoutes.tsx](file:/Unitraack/frontend/src/routes/MainRoutes.tsx)
 
 ### 9.2. Mapeamento de Rotas
 
@@ -418,30 +418,30 @@ Existem apenas **3 Custom Hooks** em todo o código-fonte:
 A criticidade foi avaliada considerando volume de linhas, multiplicidade de estados/efeitos, chamadas de API inlined e impacto direto nos fluxos de negócio:
 
 ### Criticidade Alta:
-1. [SuperAdminDashboard.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/admin/pages/SuperAdminDashboard.tsx) (1.291 linhas): Ponto único de falha para a gestão de toda a plataforma SaaS e criação de usinas.
-2. [PortariaDashboard.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/requests/pages/PortariaDashboard.tsx) (1.218 linhas): Fluxo central da segurança operacional física (conferência de cargas, fotos e entrada).
-3. [LiderDashboard.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/requests/pages/LiderDashboard.tsx) (988 linhas): Fluxo de autorização de entrada e controle de inventário interno de setores.
-4. [InteractiveMap.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/monitoring/components/InteractiveMap.tsx) (750 linhas): Componente mais complexo matematicamente e visualmente na aplicação (Digital Twin).
-5. [AuditTimeline.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/requests/components/dashboard/audit/AuditTimeline.tsx) (685 linhas): Relatórios regulatórios e de conformidade de terceirizados.
-6. [AuthContext.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/contexts/AuthContext.tsx) (272 linhas): Base de segurança e persistência de sessão de todos os perfis.
+1. [SuperAdminDashboard.tsx](file:/Unitraack/frontend/src/features/admin/pages/SuperAdminDashboard.tsx) (1.291 linhas): Ponto único de falha para a gestão de toda a plataforma SaaS e criação de usinas.
+2. [PortariaDashboard.tsx](file:/Unitraack/frontend/src/features/requests/pages/PortariaDashboard.tsx) (1.218 linhas): Fluxo central da segurança operacional física (conferência de cargas, fotos e entrada).
+3. [LiderDashboard.tsx](file:/Unitraack/frontend/src/features/requests/pages/LiderDashboard.tsx) (988 linhas): Fluxo de autorização de entrada e controle de inventário interno de setores.
+4. [InteractiveMap.tsx](file:/Unitraack/frontend/src/features/monitoring/components/InteractiveMap.tsx) (750 linhas): Componente mais complexo matematicamente e visualmente na aplicação (Digital Twin).
+5. [AuditTimeline.tsx](file:/Unitraack/frontend/src/features/requests/components/dashboard/audit/AuditTimeline.tsx) (685 linhas): Relatórios regulatórios e de conformidade de terceirizados.
+6. [AuthContext.tsx](file:/Unitraack/frontend/src/contexts/AuthContext.tsx) (272 linhas): Base de segurança e persistência de sessão de todos os perfis.
 
 ### Criticidade Média:
-1. [TerceirizadaDashboard.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/requests/pages/TerceirizadaDashboard.tsx) (614 linhas): Acompanhamento e gestão de pedidos do parceiro externo.
-2. [NovaSolicitacao.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/requests/pages/Terceirizada/NovaSolicitacao.tsx) (595 linhas): Ponto de entrada de todas as solicitações no sistema.
-3. [MonitoringDashboard.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/monitoring/components/MonitoringDashboard.tsx) (418 linhas): Mapeamento de materiais por setor.
-4. [PendingApprovals.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/requests/components/dashboard/PendingApprovals.tsx) (330 linhas): Fila de autorizações operacionais.
-5. [TransferModal.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/requests/components/dashboard/TransferModal.tsx) (304 linhas): Movimentação entre setores.
-6. [MemberList.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/admin/components/dashboard/team/MemberList.tsx) (309 linhas): Gestão de acessos internos da usina.
-7. [DashboardContext.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/contexts/DashboardContext.tsx) (145 linhas): Orquestração de dados em tempo real.
-8. [TenantContext.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/contexts/TenantContext.tsx) (121 linhas): Identidade visual e multi-tenant.
+1. [TerceirizadaDashboard.tsx](file:/Unitraack/frontend/src/features/requests/pages/TerceirizadaDashboard.tsx) (614 linhas): Acompanhamento e gestão de pedidos do parceiro externo.
+2. [NovaSolicitacao.tsx](file:/Unitraack/frontend/src/features/requests/pages/Terceirizada/NovaSolicitacao.tsx) (595 linhas): Ponto de entrada de todas as solicitações no sistema.
+3. [MonitoringDashboard.tsx](file:/Unitraack/frontend/src/features/monitoring/components/MonitoringDashboard.tsx) (418 linhas): Mapeamento de materiais por setor.
+4. [PendingApprovals.tsx](file:/Unitraack/frontend/src/features/requests/components/dashboard/PendingApprovals.tsx) (330 linhas): Fila de autorizações operacionais.
+5. [TransferModal.tsx](file:/Unitraack/frontend/src/features/requests/components/dashboard/TransferModal.tsx) (304 linhas): Movimentação entre setores.
+6. [MemberList.tsx](file:/Unitraack/frontend/src/features/admin/components/dashboard/team/MemberList.tsx) (309 linhas): Gestão de acessos internos da usina.
+7. [DashboardContext.tsx](file:/Unitraack/frontend/src/contexts/DashboardContext.tsx) (145 linhas): Orquestração de dados em tempo real.
+8. [TenantContext.tsx](file:/Unitraack/frontend/src/contexts/TenantContext.tsx) (121 linhas): Identidade visual e multi-tenant.
 
 ### Criticidade Baixa:
-1. [ThirdPartiesReport.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/monitoring/components/ThirdPartiesReport.tsx) (247 linhas): Relatórios gerenciais de leitura.
-2. [SectorManagement.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/admin/components/dashboard/team/SectorManagement.tsx) (204 linhas): Cadastro de áreas físicas.
-3. [InviteGenerator.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/admin/components/dashboard/team/InviteGenerator.tsx) (158 linhas): Formatação de links de convite.
-4. [ManualRegisterForm.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/admin/components/dashboard/team/ManualRegisterForm.tsx) (236 linhas): Cadastro manual de colaboradores.
-5. [RoleDispatcher.tsx](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/features/auth/components/RoleDispatcher.tsx) (84 linhas): Despacho de rotas.
-6. [Guards e Utils](file:///c:/Users/keven/Documentos/GitHub/Unitraack/frontend/src/guards/) (`ProtectedRoute`, `masks`, `subdomain`): Estruturas compactas e com escopo delimitado.
+1. [ThirdPartiesReport.tsx](file:/Unitraack/frontend/src/features/monitoring/components/ThirdPartiesReport.tsx) (247 linhas): Relatórios gerenciais de leitura.
+2. [SectorManagement.tsx](file:/Unitraack/frontend/src/features/admin/components/dashboard/team/SectorManagement.tsx) (204 linhas): Cadastro de áreas físicas.
+3. [InviteGenerator.tsx](file:/Unitraack/frontend/src/features/admin/components/dashboard/team/InviteGenerator.tsx) (158 linhas): Formatação de links de convite.
+4. [ManualRegisterForm.tsx](file:/Unitraack/frontend/src/features/admin/components/dashboard/team/ManualRegisterForm.tsx) (236 linhas): Cadastro manual de colaboradores.
+5. [RoleDispatcher.tsx](file:/Unitraack/frontend/src/features/auth/components/RoleDispatcher.tsx) (84 linhas): Despacho de rotas.
+6. [Guards e Utils](file:/Unitraack/frontend/src/guards/) (`ProtectedRoute`, `masks`, `subdomain`): Estruturas compactas e com escopo delimitado.
 
 ---
 
