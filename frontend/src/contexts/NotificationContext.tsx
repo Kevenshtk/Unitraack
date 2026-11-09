@@ -262,7 +262,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           // Filtro de relevância de perfil
           let isRelevant = true;
           if (profile.role === 'PORTARIA') {
-            isRelevant = newNotif.type === 'EXIT_WAITING' || newNotif.type === 'ARRIVAL' || newNotif.role === 'PORTARIA';
+            isRelevant = newNotif.type === 'EXIT_WAITING' || newNotif.role === 'PORTARIA';
           } else if (profile.role === 'LIDER') {
             if (newNotif.sector_id && profile.sector_id && newNotif.sector_id !== profile.sector_id) {
               isRelevant = false;
