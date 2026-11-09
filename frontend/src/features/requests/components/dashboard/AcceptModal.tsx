@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, ShieldCheck, Loader2, Package, Camera, Hash } from 'lucide-react';
 import { useAuth } from '../../../../contexts/AuthContext';
-import Swal from 'sweetalert2';
+import { toast } from 'sonner';
 
 interface AcceptModalProps {
   materialName: string;
@@ -41,44 +41,23 @@ export const AcceptModal: React.FC<AcceptModalProps> = ({
     const userReg = profile?.registration_number?.trim().toUpperCase();
 
     if (!cleanSignature) {
-      Swal.fire({
-        title: 'Matrícula Obrigatória',
-        text: 'Por favor, informe a matrícula do responsável para confirmar o recebimento.',
-        icon: 'warning',
-        confirmButtonColor: '#0052cc',
-        customClass: {
-          popup: 'rounded-[2rem] font-brand',
-          confirmButton: 'rounded-xl font-bold uppercase text-xs px-6 py-3'
-        }
+      toast.warning('Matrícula Obrigatória', {
+        description: 'Por favor, informe a matrícula do responsável para confirmar o recebimento.'
       });
       return;
     }
 
     if (profile?.role !== 'SUPER_ADMIN') {
       if (!userReg) {
-        Swal.fire({
-          title: 'Matrícula Não Cadastrada',
-          text: 'Seu usuário não possui matrícula cadastrada no sistema. Contate o administrador.',
-          icon: 'error',
-          confirmButtonColor: '#0052cc',
-          customClass: {
-            popup: 'rounded-[2rem] font-brand',
-            confirmButton: 'rounded-xl font-bold uppercase text-xs px-6 py-3'
-          }
+        toast.error('Matrícula Não Cadastrada', {
+          description: 'Seu usuário não possui matrícula cadastrada no sistema. Contate o administrador.'
         });
         return;
       }
 
       if (cleanSignature !== userReg) {
-        Swal.fire({
-          title: 'Matrícula Inválida!',
-          text: 'A matrícula informada não confere com o responsável por este setor.',
-          icon: 'error',
-          confirmButtonColor: '#0052cc',
-          customClass: {
-            popup: 'rounded-[2rem] font-brand',
-            confirmButton: 'rounded-xl font-bold uppercase text-xs px-6 py-3'
-          }
+        toast.error('Matrícula Inválida!', {
+          description: 'A matrícula informada não confere com o responsável por este setor.'
         });
         return;
       }

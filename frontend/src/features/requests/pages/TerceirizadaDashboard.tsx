@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAuthToken, getTenantLogoUrl } from '../../../utils/subdomain';
+import { getTenantLogoUrl } from '../../../utils/subdomain';
 import { 
   Plus, 
   Clock, 
@@ -20,14 +20,15 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useTenant } from '../../../contexts/TenantContext';
-import { api } from '../../../lib/axios';
-import Swal from 'sweetalert2';
-import 'sweetalert2/dist/sweetalert2.min.css';
+import { requestService } from '../api/requestService';
+import { toast } from 'sonner';
+import { useConfirm } from '../../../components/common/ConfirmDialog';
 import { NotificationDropdown } from '../components/dashboard/NotificationDropdown';
 
 export default function TerceirizadaDashboard() {
   const { signOut, user, profile: authProfile } = useAuth();
   const { tenant, slug: tenantSlug } = useTenant();
+  const confirm = useConfirm();
   const navigate = useNavigate();
   const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,17 +45,12 @@ export default function TerceirizadaDashboard() {
     if (!user) return;
     setLoading(true);
     try {
-      const profileRes = await api.get('/terceirizada/profile', {
-        headers: { Authorization: `Bearer ${getAuthToken()}` }
-      });
-      setProfile(profileRes.data.data || profileRes.data);
-
-      const requestsRes = await api.get('/terceirizada/requisicoes', {
-        headers: { Authorization: `Bearer ${getAuthToken()}` }
-      });
-      
-      const reqs = requestsRes.data.data || requestsRes.data;
-      setRequests(reqs || []);
+      const [profileData, reqs] = await Promise.all([
+        requestService.getPartnerProfile(),
+        requestService.getPartnerRequests()
+      ]);
+      setProfile(profileData);
+      setRequests(Array.isArray(reqs) ? reqs : []);
     } catch (err) {
       console.error('[TerceirizadaDashboard] Erro ao carregar dados:', err);
     } finally {
@@ -96,51 +92,41 @@ export default function TerceirizadaDashboard() {
   };
 
   const handleCancel = async (id: string) => {
-    const result = await Swal.fire({
+    const result = await confirm({
       title: 'Cancelar Solicitação?',
-      text: 'Tem certeza que deseja cancelar esta solicitação?',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#64748b',
-      confirmButtonText: 'Sim, cancelar',
-      cancelButtonText: 'Voltar'
+      description: 'Tem certeza que deseja cancelar esta solicitação?',
+      variant: 'danger',
+      confirmText: 'Sim, cancelar',
+      cancelText: 'Voltar'
     });
 
     if (result.isConfirmed) {
       try {
-        await api.post(`/terceirizada/requisicoes/${id}/cancel`, {}, {
-          headers: { Authorization: `Bearer ${getAuthToken()}` }
-        });
-        Swal.fire('Cancelada!', 'A solicitação foi cancelada com sucesso.', 'success');
+        await requestService.cancelPartnerRequest(id);
+        toast.success('Cancelada!', { description: 'A solicitação foi cancelada com sucesso.' });
         fetchData();
       } catch (err: any) {
-        Swal.fire('Erro', err.response?.data?.message || 'Erro ao cancelar.', 'error');
+        toast.error('Erro', { description: err.response?.data?.message || 'Erro ao cancelar.' });
       }
     }
   };
 
   const handleDelete = async (id: string) => {
-    const result = await Swal.fire({
+    const result = await confirm({
       title: 'Excluir do Histórico?',
-      text: 'Essa ação removerá o registro do seu painel definitivamente.',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#64748b',
-      confirmButtonText: 'Sim, excluir',
-      cancelButtonText: 'Voltar'
+      description: 'Essa ação removerá o registro do seu painel definitivamente.',
+      variant: 'danger',
+      confirmText: 'Sim, excluir',
+      cancelText: 'Voltar'
     });
 
     if (result.isConfirmed) {
       try {
-        await api.delete(`/terceirizada/requisicoes/${id}`, {
-          headers: { Authorization: `Bearer ${getAuthToken()}` }
-        });
-        Swal.fire('Excluído!', 'O registro foi removido com sucesso.', 'success');
+        await requestService.deletePartnerRequest(id);
+        toast.success('Excluído!', { description: 'O registro foi removido com sucesso.' });
         fetchData();
       } catch (err: any) {
-        Swal.fire('Erro', err.response?.data?.message || 'Erro ao excluir.', 'error');
+        toast.error('Erro', { description: err.response?.data?.message || 'Erro ao excluir.' });
       }
     }
   };

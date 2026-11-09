@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import { 
   BarChart3, 
   Loader2,
 } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
+import { dashboardService } from '../api/dashboardService';
 import { AuditThirdPartyList } from './dashboard/audit/AuditThirdPartyList';
 import { AuditTimeline } from './dashboard/audit/AuditTimeline';
 import { getAuthToken } from '../../../utils/subdomain';
@@ -47,10 +47,8 @@ export default function AuditSection({
       if (!activeToken) return;
 
       setLoading(true);
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/gestor/third-parties`, {
-        headers: { 'Authorization': `Bearer ${activeToken}` }
-      });
-      setThirdParties(response.data.data || []);
+      const response = await dashboardService.getThirdPartyStats();
+      setThirdParties(response.data || []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -64,10 +62,8 @@ export default function AuditSection({
       if (!activeToken) return;
 
       setLoading(true);
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/gestor/audit-report?profileId=${profileId}`, {
-        headers: { 'Authorization': `Bearer ${activeToken}` }
-      });
-      setAuditData(response.data.data || []);
+      const response = await dashboardService.getAuditReport(profileId);
+      setAuditData(response.data || []);
     } catch (err) {
       console.error(err);
     } finally {

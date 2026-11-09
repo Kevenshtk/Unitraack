@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import { 
   Package, 
   ArrowRightLeft, 
@@ -12,7 +11,6 @@ import {
   XCircle
 } from 'lucide-react';
 import { useDashboard } from '../../../contexts/DashboardContext';
-import { useAuth } from '../../../contexts/AuthContext';
 import { MaterialDetailsModal } from '../../requests/components/dashboard/MaterialDetailsModal';
 
 /**
@@ -20,7 +18,6 @@ import { MaterialDetailsModal } from '../../requests/components/dashboard/Materi
  * Exibe a distribuição de ativos por setores em formato de gavetas (accordions).
  */
 export default function MonitoringDashboard({ parentSectorId }: { parentSectorId?: string | null }) {
-  const { token } = useAuth();
   const { sectors, materials, movements, loading, refreshData } = useDashboard();
   const [filterText, setFilterText] = useState('');
   const [transferModal, setTransferModal] = useState<{materialId: string, materialName: string} | null>(null);

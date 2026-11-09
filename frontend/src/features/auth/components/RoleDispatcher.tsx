@@ -64,17 +64,9 @@ export default function RoleDispatcher() {
     case 'TERCEIRIZADA':
       return <TerceirizadaDashboard />;
     case 'LIDER_SETOR':
-      return (
-        <DashboardProvider>
-          <LiderDashboard />
-        </DashboardProvider>
-      );
+      return <LiderDashboard />;
     case 'PORTARIA':
-      return (
-        <DashboardProvider>
-          <PortariaDashboard />
-        </DashboardProvider>
-      );
+      return <PortariaDashboard />;
     case 'GESTOR_SEGURANCA':
       return (
         <DashboardProvider>

@@ -3,7 +3,7 @@ import { X, LogOut, Loader2, Camera, Upload, Hash, ChevronDown } from 'lucide-re
 import { useAuth } from '../../../../contexts/AuthContext';
 import { WebcamModal } from '../../../../components/WebcamModal';
 import { compressImage } from '../../../../utils/imageCompressor';
-import Swal from 'sweetalert2';
+import { toast } from 'sonner';
 
 interface ExitModalProps {
   materialIds: string[];
@@ -47,44 +47,23 @@ export const ExitModal: React.FC<ExitModalProps> = ({
     const userReg = profile?.registration_number?.trim().toUpperCase();
 
     if (!cleanSignature) {
-      Swal.fire({
-        title: 'Matrícula Obrigatória',
-        text: 'Por favor, informe a matrícula do responsável para autorizar a saída.',
-        icon: 'warning',
-        confirmButtonColor: '#e11d48',
-        customClass: {
-          popup: 'rounded-2xl font-brand',
-          confirmButton: 'rounded-xl font-bold uppercase text-xs px-6 py-3'
-        }
+      toast.warning('Matrícula Obrigatória', {
+        description: 'Por favor, informe a matrícula do responsável para autorizar a saída.'
       });
       return false;
     }
 
     if (profile?.role !== 'SUPER_ADMIN') {
       if (!userReg) {
-        Swal.fire({
-          title: 'Matrícula Não Cadastrada',
-          text: 'Seu usuário não possui matrícula cadastrada no sistema. Contate o administrador.',
-          icon: 'error',
-          confirmButtonColor: '#e11d48',
-          customClass: {
-            popup: 'rounded-2xl font-brand',
-            confirmButton: 'rounded-xl font-bold uppercase text-xs px-6 py-3'
-          }
+        toast.error('Matrícula Não Cadastrada', {
+          description: 'Seu usuário não possui matrícula cadastrada no sistema. Contate o administrador.'
         });
         return false;
       }
 
       if (cleanSignature !== userReg) {
-        Swal.fire({
-          title: 'Matrícula Inválida!',
-          text: 'A matrícula informada não confere com o seu cadastro de líder.',
-          icon: 'error',
-          confirmButtonColor: '#e11d48',
-          customClass: {
-            popup: 'rounded-2xl font-brand',
-            confirmButton: 'rounded-xl font-bold uppercase text-xs px-6 py-3'
-          }
+        toast.error('Matrícula Inválida!', {
+          description: 'A matrícula informada não confere com o seu cadastro de líder.'
         });
         return false;
       }

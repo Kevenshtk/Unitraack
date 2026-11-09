@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { api } from '../../../lib/axios';
+import { toast } from 'sonner';
 import { 
   Maximize2, 
   Minimize2, 
@@ -183,8 +184,9 @@ export default function InteractiveMap() {
       
       setIsEditMode(false);
       refreshData();
+      toast.success('Layout do mapa salvo com sucesso!');
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Erro ao salvar layout do mapa.');
+      toast.error(err.response?.data?.error || 'Erro ao salvar layout do mapa.');
     } finally {
       setIsSaving(false);
     }

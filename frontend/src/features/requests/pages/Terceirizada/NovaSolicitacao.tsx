@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { getAuthToken, getTenantLogoUrl } from '../../../../utils/subdomain';
+import { getTenantLogoUrl } from '../../../../utils/subdomain';
 import { supabase } from '../../../../lib/supabase';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { useTenant } from '../../../../contexts/TenantContext';
@@ -20,8 +20,9 @@ import {
   AlertCircle,
   Search
 } from 'lucide-react';
-import axios from 'axios';
+import { requestService } from '../../api/requestService';
 import { compressImage } from '../../../../utils/imageCompressor';
+import { toast } from 'sonner';
 
 const dataUrlToBlob = (dataUrl: string): Blob => {
   const arr = dataUrl.split(',');
@@ -91,7 +92,6 @@ export default function NovaSolicitacao() {
   }, [editMode, editRequest]);
 
   useEffect(() => {
-    fetchProfile();
     fetchSectors();
   }, [user]);
 
@@ -113,10 +113,8 @@ export default function NovaSolicitacao() {
 
   const fetchSectors = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/sectors`, {
-        headers: { 'Authorization': `Bearer ${getAuthToken()}` }
-      });
-      setSectors(response.data.data || []);
+      const data = await requestService.getSectors();
+      setSectors(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Erro ao carregar setores:', err);
     }
@@ -128,19 +126,6 @@ export default function NovaSolicitacao() {
         setPlate(editRequest.plate || '');
      }
   }, [editMode, editRequest]);
-
-  const fetchProfile = async () => {
-    if (!user) return;
-    try {
-      await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-    } catch (err) {
-      console.error('Erro ao carregar perfil:', err);
-    }
-  };
 
   const addMaterial = () => {
     const newItem: MaterialItem = {
@@ -206,7 +191,9 @@ export default function NovaSolicitacao() {
       console.error('Erro no upload da imagem:', err);
       updateMaterial(id, 'imageUrl', '');
       updateMaterial(id, 'previewUrl', '');
-      setErrorMessage('Falha ao subir a imagem no servidor. Verifique sua conexão e tente novamente.');
+      const uploadErrMsg = 'Falha ao subir a imagem no servidor. Verifique sua conexão e tente novamente.';
+      setErrorMessage(uploadErrMsg);
+      toast.error(uploadErrMsg);
     } finally {
       updateMaterial(id, 'uploading', false);
     }
@@ -215,29 +202,39 @@ export default function NovaSolicitacao() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (materials.length === 0) {
-      setErrorMessage('Adicione pelo menos um equipamento para continuar.');
+      const msg = 'Adicione pelo menos um equipamento para continuar.';
+      setErrorMessage(msg);
+      toast.warning(msg);
       return;
     }
 
     if (!parentSectorId || !sectorId) {
-      setErrorMessage('Por favor, selecione o Setor Geral e o Local Específico.');
+      const msg = 'Por favor, selecione o Setor Geral e o Local Específico.';
+      setErrorMessage(msg);
+      toast.warning(msg);
       return;
     }
 
     if (!driverName || !plate) {
-      setErrorMessage('Por favor, informe o Nome do Motorista e a Placa do Veículo.');
+      const msg = 'Por favor, informe o Nome do Motorista e a Placa do Veículo.';
+      setErrorMessage(msg);
+      toast.warning(msg);
       return;
     }
 
     const isAnyUploading = materials.some((m) => m.uploading);
     if (isAnyUploading) {
-      setErrorMessage('Aguarde o envio das fotos para o servidor terminar antes de efetuar a solicitação.');
+      const msg = 'Aguarde o envio das fotos para o servidor terminar antes de efetuar a solicitação.';
+      setErrorMessage(msg);
+      toast.warning(msg);
       return;
     }
 
     const itemDeFalta = materials.find((m) => !m.imageUrl || m.imageUrl.startsWith('blob:'));
     if (itemDeFalta) {
-      setErrorMessage(`Uma foto do equipamento ainda não foi salva no servidor. Por favor, anexe novamente.`);
+      const msg = 'Uma foto do equipamento ainda não foi salva no servidor. Por favor, anexe novamente.';
+      setErrorMessage(msg);
+      toast.warning(msg);
       return;
     }
 
@@ -256,23 +253,13 @@ export default function NovaSolicitacao() {
       };
 
 
-      const url = editMode 
-        ? `${import.meta.env.VITE_API_URL}/terceirizada/requisicao/${editRequest.id}`
-        : `${import.meta.env.VITE_API_URL}/terceirizada/requisicao`;
-
-      const method = editMode ? 'put' : 'post';
-
-      const response = await axios({
-        method,
-        url,
-        data: payload,
-        headers: {
-          'Authorization': `Bearer ${getAuthToken()}`
-        }
-      });
+      const response = editMode
+        ? await requestService.updateRequest(editRequest.id, payload)
+        : await requestService.createRequest(payload);
 
       if (response.status === 201 || response.status === 200) {
         setShowSuccess(true);
+        toast.success(editMode ? 'Solicitação atualizada com sucesso!' : 'Solicitação enviada com sucesso!');
         setTimeout(() => {
           const slug = tenantSlug || profile?.tenant?.subdomain || 'painel';
           const rolePath = profile?.role?.toLowerCase().replace('_', '-') || 'terceirizada';
@@ -284,7 +271,9 @@ export default function NovaSolicitacao() {
         }, 3000);
       }
     } catch (err: any) {
-      setErrorMessage(err.response?.data?.error || 'Ocorreu um erro ao enviar sua solicitação.');
+      const errMsg = err.response?.data?.error || 'Ocorreu um erro ao enviar sua solicitação.';
+      setErrorMessage(errMsg);
+      toast.error(errMsg);
     } finally {
       setSubmitting(false);
     }

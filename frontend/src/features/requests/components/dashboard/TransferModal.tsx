@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { X, Send, Loader2, ChevronDown, Camera, Upload, Hash } from 'lucide-react';
-import { useDashboard } from '../../../../contexts/DashboardContext';
+import { useOptionalDashboard } from '../../../../contexts/DashboardContext';
 import { useAuth } from '../../../../contexts/AuthContext';
-import { api } from '../../../../lib/axios';
+import { requestService } from '../../api/requestService';
 import { WebcamModal } from '../../../../components/WebcamModal';
 import { compressImage } from '../../../../utils/imageCompressor';
-import Swal from 'sweetalert2';
+import { toast } from 'sonner';
 
 interface TransferModalProps {
   materialIds: string[];
@@ -24,14 +24,9 @@ export const TransferModal: React.FC<TransferModalProps> = ({
   currentSectorId,
   currentSectorName
 }) => {
-  // Obtenção de setores via contexto com fallback seguro
-  let contextSectors: any[] = [];
-  try {
-    const dashboard = useDashboard();
-    contextSectors = dashboard?.sectors || [];
-  } catch {
-    contextSectors = [];
-  }
+  // Obtenção de setores via contexto opcional (presente apenas no perfil Gestor)
+  const dashboard = useOptionalDashboard();
+  const contextSectors: any[] = dashboard?.sectors || [];
 
   const { profile } = useAuth();
   const [sectors, setSectors] = useState<any[]>(contextSectors);
@@ -49,9 +44,8 @@ export const TransferModal: React.FC<TransferModalProps> = ({
       setSectors(contextSectors);
     } else {
       setLoadingSectors(true);
-      api.get('/sectors')
-        .then(res => {
-          const list = res.data?.data || res.data || [];
+      requestService.getSectors()
+        .then(list => {
           if (Array.isArray(list)) {
             setSectors(list);
           }
@@ -133,44 +127,23 @@ export const TransferModal: React.FC<TransferModalProps> = ({
     const userReg = profile?.registration_number?.trim().toUpperCase();
 
     if (!cleanSignature) {
-      Swal.fire({
-        title: 'Matrícula Obrigatória',
-        text: 'Por favor, informe a matrícula do responsável para confirmar.',
-        icon: 'warning',
-        confirmButtonColor: '#0052cc',
-        customClass: {
-          popup: 'rounded-2xl font-brand',
-          confirmButton: 'rounded-xl font-bold uppercase text-xs px-6 py-3'
-        }
+      toast.warning('Matrícula Obrigatória', {
+        description: 'Por favor, informe a matrícula do responsável para confirmar.'
       });
       return false;
     }
 
     if (profile?.role !== 'SUPER_ADMIN') {
       if (!userReg) {
-        Swal.fire({
-          title: 'Matrícula Não Cadastrada',
-          text: 'Seu usuário não possui matrícula cadastrada no sistema. Contate o administrador.',
-          icon: 'error',
-          confirmButtonColor: '#0052cc',
-          customClass: {
-            popup: 'rounded-2xl font-brand',
-            confirmButton: 'rounded-xl font-bold uppercase text-xs px-6 py-3'
-          }
+        toast.error('Matrícula Não Cadastrada', {
+          description: 'Seu usuário não possui matrícula cadastrada no sistema. Contate o administrador.'
         });
         return false;
       }
 
       if (cleanSignature !== userReg) {
-        Swal.fire({
-          title: 'Matrícula Inválida!',
-          text: 'A matrícula informada não confere com o responsável por este setor.',
-          icon: 'error',
-          confirmButtonColor: '#0052cc',
-          customClass: {
-            popup: 'rounded-2xl font-brand',
-            confirmButton: 'rounded-xl font-bold uppercase text-xs px-6 py-3'
-          }
+        toast.error('Matrícula Inválida!', {
+          description: 'A matrícula informada não confere com o responsável por este setor.'
         });
         return false;
       }
@@ -185,15 +158,8 @@ export const TransferModal: React.FC<TransferModalProps> = ({
 
     const chosenSector = sectors.find(s => s.id === selectedSubSector);
     if (isCurrentSector(chosenSector) || selectedSubSector === originSectorId) {
-      Swal.fire({
-        title: 'Destino Inválido',
-        text: 'O setor de destino deve ser diferente do setor de origem onde o equipamento já está.',
-        icon: 'warning',
-        confirmButtonColor: '#0052cc',
-        customClass: {
-          popup: 'rounded-2xl font-brand',
-          confirmButton: 'rounded-xl font-bold uppercase text-xs px-6 py-3'
-        }
+      toast.warning('Destino Inválido', {
+        description: 'O setor de destino deve ser diferente do setor de origem onde o equipamento já está.'
       });
       return;
     }

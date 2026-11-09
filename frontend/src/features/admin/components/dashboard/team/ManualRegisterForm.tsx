@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { 
   Loader2, 
   Hash,
@@ -13,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useDashboard } from '../../../../../contexts/DashboardContext';
 import { useAuth } from '../../../../../contexts/AuthContext';
+import { teamService } from '../../../api/teamService';
 import { CustomSelect } from './TeamCommon';
 
 interface ManualRegisterFormProps {
@@ -43,12 +43,8 @@ export function ManualRegisterForm({ tenantId, usinaCnpj, onSuccess, onError }: 
   useEffect(() => {
     const fetchMembers = async () => {
       try {
-        const resp = await axios.get(`${import.meta.env.VITE_API_URL}/gestor/team`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (resp.data.success) {
-          setMembers(resp.data.data);
-        }
+        const data = await teamService.getTeamMembers();
+        setMembers(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error('Erro ao buscar equipe', err);
       }
@@ -136,12 +132,10 @@ export function ManualRegisterForm({ tenantId, usinaCnpj, onSuccess, onError }: 
     setLoading(true);
 
     try {
-      await axios.post(`${import.meta.env.VITE_API_URL}/auth/register`, { 
+      await teamService.registerInternalMember({ 
         ...formData, 
         usinaCnpj,
         tenantId
-      }, {
-        headers: { 'Authorization': `Bearer ${token}` }
       });
 
       onSuccess('Colaborador cadastrado com sucesso!');

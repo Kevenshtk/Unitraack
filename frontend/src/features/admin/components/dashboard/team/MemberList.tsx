@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import axios from 'axios';
-import Swal from 'sweetalert2';
+import { toast } from 'sonner';
 import { 
   ShieldCheck, 
   HardHat, 
@@ -15,11 +14,11 @@ import {
   Hash,
   MapPin,
   AlertTriangle,
-  Lock,
   User
 } from 'lucide-react';
-import { useAuth } from '../../../../../contexts/AuthContext';
 import { useDashboard } from '../../../../../contexts/DashboardContext';
+import { useConfirm } from '../../../../../components/common/ConfirmDialog';
+import { teamService } from '../../../api/teamService';
 import { Modal, CustomSelect, InputGroup } from './TeamCommon';
 
 interface MemberListProps {
@@ -36,8 +35,8 @@ function formatName(name: string): string {
 }
 
 export function MemberList({ tenantId }: MemberListProps) {
-  const { token } = useAuth();
   const { sectors } = useDashboard();
+  const confirm = useConfirm();
   const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -59,12 +58,8 @@ export function MemberList({ tenantId }: MemberListProps) {
     if (!tenantId) return;
     setLoading(true);
     try {
-      const resp = await axios.get(`${import.meta.env.VITE_API_URL}/gestor/team`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (resp.data.success) {
-        setMembers(resp.data.data);
-      }
+      const data = await teamService.getTeamMembers();
+      setMembers(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -77,31 +72,15 @@ export function MemberList({ tenantId }: MemberListProps) {
     if (!editingMember) return;
     setUpdating(true);
     try {
-      await axios.put(`${import.meta.env.VITE_API_URL}/gestor/team/${editingMember.id}`, editingMember, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      await teamService.updateTeamMember(editingMember.id, editingMember);
       setEditingMember(null);
       fetchMembers();
-      Swal.fire({
-        title: 'Membro Atualizado!',
-        text: 'Os dados do colaborador foram atualizados com sucesso.',
-        icon: 'success',
-        confirmButtonColor: '#002B49',
-        customClass: {
-          popup: 'rounded-2xl font-brand',
-          confirmButton: 'rounded-xl font-bold uppercase text-xs px-6 py-3'
-        }
+      toast.success('Membro Atualizado!', {
+        description: 'Os dados do colaborador foram atualizados com sucesso.'
       });
     } catch (err: any) {
-      Swal.fire({
-        title: 'Erro ao Atualizar',
-        text: err.response?.data?.error || 'Erro ao atualizar membro.',
-        icon: 'error',
-        confirmButtonColor: '#002B49',
-        customClass: {
-          popup: 'rounded-2xl font-brand',
-          confirmButton: 'rounded-xl font-bold uppercase text-xs px-6 py-3'
-        }
+      toast.error('Erro ao Atualizar', {
+        description: err.response?.data?.error || 'Erro ao atualizar membro.'
       });
     } finally {
       setUpdating(false);
@@ -112,53 +91,28 @@ export function MemberList({ tenantId }: MemberListProps) {
     const isActivating = member.is_active === false;
     const actionText = isActivating ? 'ativar' : 'desativar';
 
-    const result = await Swal.fire({
+    const result = await confirm({
       title: `${isActivating ? 'Ativar' : 'Desativar'} Colaborador?`,
-      text: `Deseja realmente ${actionText} o acesso de ${formatName(member.full_name)}?`,
-      icon: isActivating ? 'question' : 'warning',
-      showCancelButton: true,
-      confirmButtonColor: isActivating ? '#059669' : '#e11d48',
-      cancelButtonColor: '#64748b',
-      confirmButtonText: `Sim, ${actionText}`,
-      cancelButtonText: 'Cancelar',
-      customClass: {
-        popup: 'rounded-2xl font-brand',
-        confirmButton: 'rounded-xl font-bold uppercase text-xs px-6 py-3',
-        cancelButton: 'rounded-xl font-bold uppercase text-xs px-6 py-3'
-      }
+      description: `Deseja realmente ${actionText} o acesso de ${formatName(member.full_name)}?`,
+      variant: isActivating ? 'primary' : 'danger',
+      confirmText: `Sim, ${actionText}`,
+      cancelText: 'Cancelar'
     });
 
     if (!result.isConfirmed) return;
 
     try {
-      await axios.put(`${import.meta.env.VITE_API_URL}/gestor/team/${member.id}`, {
+      await teamService.updateTeamMember(member.id, {
         ...member,
         is_active: !member.is_active
-      }, {
-        headers: { 'Authorization': `Bearer ${token}` }
       });
       fetchMembers();
-      Swal.fire({
-        title: isActivating ? 'Conta Ativada!' : 'Conta Desativada!',
-        text: `O colaborador foi ${isActivating ? 'ativado' : 'desativado'} com sucesso.`,
-        icon: 'success',
-        confirmButtonColor: '#002B49',
-        timer: 2000,
-        showConfirmButton: false,
-        customClass: {
-          popup: 'rounded-2xl font-brand'
-        }
+      toast.success(isActivating ? 'Conta Ativada!' : 'Conta Desativada!', {
+        description: `O colaborador foi ${isActivating ? 'ativado' : 'desativado'} com sucesso.`
       });
     } catch (err: any) {
-      Swal.fire({
-        title: 'Erro ao Alterar Status',
-        text: err.response?.data?.error || 'Erro ao alterar status.',
-        icon: 'error',
-        confirmButtonColor: '#002B49',
-        customClass: {
-          popup: 'rounded-2xl font-brand',
-          confirmButton: 'rounded-xl font-bold uppercase text-xs px-6 py-3'
-        }
+      toast.error('Erro ao Alterar Status', {
+        description: err.response?.data?.error || 'Erro ao alterar status.'
       });
     }
   };
@@ -167,31 +121,15 @@ export function MemberList({ tenantId }: MemberListProps) {
     if (!deletingMember) return;
     setUpdating(true);
     try {
-      await axios.delete(`${import.meta.env.VITE_API_URL}/gestor/team/${deletingMember.id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      await teamService.deleteTeamMember(deletingMember.id);
       setDeletingMember(null);
       fetchMembers();
-      Swal.fire({
-        title: 'Colaborador Removido!',
-        text: 'O colaborador foi excluído da equipe com sucesso.',
-        icon: 'success',
-        confirmButtonColor: '#002B49',
-        customClass: {
-          popup: 'rounded-2xl font-brand',
-          confirmButton: 'rounded-xl font-bold uppercase text-xs px-6 py-3'
-        }
+      toast.success('Colaborador Removido!', {
+        description: 'O colaborador foi excluído da equipe com sucesso.'
       });
     } catch (err: any) {
-      Swal.fire({
-        title: 'Erro ao Remover',
-        text: err.response?.data?.error || 'Erro ao remover membro da equipe.',
-        icon: 'error',
-        confirmButtonColor: '#002B49',
-        customClass: {
-          popup: 'rounded-2xl font-brand',
-          confirmButton: 'rounded-xl font-bold uppercase text-xs px-6 py-3'
-        }
+      toast.error('Erro ao Remover', {
+        description: err.response?.data?.error || 'Erro ao remover membro da equipe.'
       });
     } finally {
       setUpdating(false);
@@ -203,48 +141,23 @@ export function MemberList({ tenantId }: MemberListProps) {
     if (!resettingPassword || !newPassword) return;
 
     if (newPassword.length < 6) {
-      Swal.fire({
-        title: 'Senha Curta',
-        text: 'A nova senha deve ter no mínimo 6 caracteres.',
-        icon: 'warning',
-        confirmButtonColor: '#002B49',
-        customClass: {
-          popup: 'rounded-2xl font-brand',
-          confirmButton: 'rounded-xl font-bold uppercase text-xs px-6 py-3'
-        }
+      toast.warning('Senha Curta', {
+        description: 'A nova senha deve ter no mínimo 6 caracteres.'
       });
       return;
     }
 
     setUpdating(true);
     try {
-      await axios.post(`${import.meta.env.VITE_API_URL}/gestor/team/${resettingPassword.id}/reset-password`, {
-        newPassword
-      }, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      await teamService.resetMemberPassword(resettingPassword.id, newPassword);
       setResettingPassword(null);
       setNewPassword('');
-      Swal.fire({
-        title: 'Senha Redefinida!',
-        text: 'A senha do colaborador foi atualizada com sucesso.',
-        icon: 'success',
-        confirmButtonColor: '#002B49',
-        customClass: {
-          popup: 'rounded-2xl font-brand',
-          confirmButton: 'rounded-xl font-bold uppercase text-xs px-6 py-3'
-        }
+      toast.success('Senha Redefinida!', {
+        description: 'A senha do colaborador foi atualizada com sucesso.'
       });
     } catch (err: any) {
-      Swal.fire({
-        title: 'Erro ao Redefinir Senha',
-        text: err.response?.data?.error || 'Erro ao redefinir senha.',
-        icon: 'error',
-        confirmButtonColor: '#002B49',
-        customClass: {
-          popup: 'rounded-2xl font-brand',
-          confirmButton: 'rounded-xl font-bold uppercase text-xs px-6 py-3'
-        }
+      toast.error('Erro ao Redefinir Senha', {
+        description: err.response?.data?.error || 'Erro ao redefinir senha.'
       });
     } finally {
       setUpdating(false);

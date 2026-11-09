@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { 
   Copy, 
   Check, 
@@ -13,6 +12,7 @@ import {
 import { useDashboard } from '../../../../../contexts/DashboardContext';
 import { useTenant } from '../../../../../contexts/TenantContext';
 import { useAuth } from '../../../../../contexts/AuthContext';
+import { teamService } from '../../../api/teamService';
 import { CustomSelect } from './TeamCommon';
 
 interface InviteGeneratorProps {
@@ -35,12 +35,8 @@ export function InviteGenerator({ tenantId, usinaCnpj }: InviteGeneratorProps) {
   useEffect(() => {
     const fetchMembers = async () => {
       try {
-        const resp = await axios.get(`${import.meta.env.VITE_API_URL}/gestor/team`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (resp.data.success) {
-          setMembers(resp.data.data);
-        }
+        const data = await teamService.getTeamMembers();
+        setMembers(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error('Erro ao buscar equipe', err);
       }

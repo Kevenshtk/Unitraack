@@ -15,6 +15,7 @@ import {
   EyeOff
 } from 'lucide-react';
 import { getSubdomain } from '../../../utils/subdomain';
+import { toast } from 'sonner';
 import ParticleBackground from '../components/ParticleBackground';
 
 export default function RegisterGestor() {
@@ -71,7 +72,7 @@ export default function RegisterGestor() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
-      alert('As senhas não coincidem!');
+      toast.warning('As senhas não coincidem!');
       return;
     }
 
@@ -95,11 +96,12 @@ export default function RegisterGestor() {
       const d = await resp.json();
       if (resp.ok && (d.success !== false)) {
         setSuccess(true);
+        toast.success('Conta de Gestor ativada com sucesso!');
       } else {
-        alert(d.error || 'Erro ao realizar cadastro.');
+        toast.error(d.error || 'Erro ao realizar cadastro.');
       }
     } catch (err) {
-      alert('Erro ao realizar cadastro.');
+      toast.error('Erro ao realizar cadastro.');
     } finally {
       setRegistering(false);
     }
@@ -159,7 +161,7 @@ export default function RegisterGestor() {
                <button 
                  onClick={() => {
                    navigator.clipboard.writeText(loginUrl);
-                   alert('Portal link copiado com sucesso!');
+                   toast.success('Portal link copiado com sucesso!');
                  }}
                  className="p-3 bg-white text-primary hover:bg-primary hover:text-white rounded-xl shadow-sm transition-all active:scale-90"
                >

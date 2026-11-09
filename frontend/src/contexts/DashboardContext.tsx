@@ -26,8 +26,6 @@ interface DashboardContextType extends DashboardState {
   refreshData: () => Promise<void>;
   updateMaterialPosition: (materialId: string, x: number, y: number) => Promise<void>;
   updateMapLayout: (layouts: any[]) => Promise<void>;
-  approveRequest: (requestId: string) => Promise<void>;
-  rejectRequest: (requestId: string, reason: string) => Promise<void>;
 }
 
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
@@ -140,16 +138,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     };
   }, [fetchData]);
 
-  const approveRequest = async (requestId: string) => {
-    await dashboardService.approveRequest(requestId);
-    await fetchData();
-  };
-
-  const rejectRequest = async (requestId: string, reason: string) => {
-    await dashboardService.rejectRequest(requestId, reason);
-    await fetchData();
-  };
-
   const updateMaterialPosition = async (materialId: string, x: number, y: number) => {
     await dashboardService.updateMaterialPosition(materialId, x, y);
     // Update local otimista ou refresh
@@ -165,8 +153,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     <DashboardContext.Provider value={{ 
       ...state, 
       refreshData: fetchData,
-      approveRequest,
-      rejectRequest,
       updateMaterialPosition,
       updateMapLayout
     }}>
@@ -179,4 +165,8 @@ export const useDashboard = () => {
   const context = useContext(DashboardContext);
   if (!context) throw new Error('useDashboard deve ser usado dentro de um DashboardProvider');
   return context;
+};
+
+export const useOptionalDashboard = () => {
+  return useContext(DashboardContext);
 };

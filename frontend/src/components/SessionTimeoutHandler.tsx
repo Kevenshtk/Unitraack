@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTenant } from '../contexts/TenantContext';
-import Swal from 'sweetalert2';
+import { toast } from 'sonner';
 
 // 30 minutos de inatividade total (padrão de segurança corporativo)
 const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
@@ -35,16 +35,13 @@ export const SessionTimeoutHandler: React.FC = () => {
         }
 
         // Alerta amigável e profissional para o operador
-        Swal.fire({
-          icon: 'warning',
-          title: 'Sessão Expirada',
-          text: 'Por medidas de segurança patrimonial, sua sessão foi encerrada após 30 minutos de inatividade.',
-          confirmButtonColor: '#0f766e',
-          confirmButtonText: 'Fazer Login Novamente'
-        }).then(() => {
-          const loginPath = isSubdomain ? '/login' : (slug ? `/${slug}/login` : '/admin/login');
-          window.location.href = loginPath;
+        toast.warning('Sessão Expirada', {
+          description: 'Por medidas de segurança patrimonial, sua sessão foi encerrada após 30 minutos de inatividade.'
         });
+        const loginPath = isSubdomain ? '/login' : (slug ? `/${slug}/login` : '/admin/login');
+        setTimeout(() => {
+          window.location.href = loginPath;
+        }, 1500);
       }, INACTIVITY_TIMEOUT_MS);
     };
 

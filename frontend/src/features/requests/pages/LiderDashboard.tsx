@@ -3,7 +3,8 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { getAuthToken } from '../../../utils/subdomain';
 import { api } from '../../../lib/axios';
 import { supabase } from '../../../lib/supabase';
-import Swal from 'sweetalert2';
+import { toast } from 'sonner';
+import { useConfirm } from '../../../components/common/ConfirmDialog';
 import { 
   Check, 
   X, 
@@ -108,6 +109,7 @@ interface LiderInfo {
 
 export default function LiderDashboard() {
   const { profile } = useAuth();
+  const confirm = useConfirm();
   const [activeSection, setActiveSection] = useState('approvals');
   const [requisicoes, setRequisicoes] = useState<Requisicao[]>([]);
   const [sectorMaterials, setSectorMaterials] = useState<Material[]>([]);
@@ -208,8 +210,11 @@ export default function LiderDashboard() {
       );
       setRequisicoes(prev => prev.filter(r => r.id !== requestId));
       fetchSectorMaterials();
+      toast.success(acao === 'APPROVE' ? 'Requisição aprovada!' : 'Requisição rejeitada!');
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Erro ao processar ação.');
+      toast.error('Erro ao Processar Ação', {
+        description: err.response?.data?.error || 'Erro ao processar ação.'
+      });
     }
   };
 
@@ -230,26 +235,12 @@ export default function LiderDashboard() {
       setIsTransferModalOpen(false);
       setSelectedForTransfer([]);
       loadData();
-      Swal.fire({
-        title: 'Transferência Enviada com Sucesso!',
-        text: 'O equipamento agora está em trânsito para o setor destinatário. O líder responsável foi notificado para conferência e aceite.',
-        icon: 'success',
-        confirmButtonColor: '#0052cc',
-        customClass: {
-          popup: 'rounded-[2rem] font-brand',
-          confirmButton: 'rounded-xl font-bold uppercase text-xs px-6 py-3'
-        }
+      toast.success('Transferência Enviada com Sucesso!', {
+        description: 'O equipamento agora está em trânsito para o setor destinatário. O líder responsável foi notificado para conferência e aceite.'
       });
     } catch (err: any) {
-      Swal.fire({
-        title: 'Erro na Transferência',
-        text: err.response?.data?.error || 'Erro ao processar transferência.',
-        icon: 'error',
-        confirmButtonColor: '#0052cc',
-        customClass: {
-          popup: 'rounded-[2rem] font-brand',
-          confirmButton: 'rounded-xl font-bold uppercase text-xs px-6 py-3'
-        }
+      toast.error('Erro na Transferência', {
+        description: err.response?.data?.error || 'Erro ao processar transferência.'
       });
     } finally {
       setIsProcessing(false);
@@ -272,16 +263,12 @@ export default function LiderDashboard() {
       setIsExitModalOpen(false);
       setSelectedForTransfer([]);
       loadData();
+      toast.success('Saída Solicitada!', {
+        description: 'O equipamento foi encaminhado para conferência de saída na portaria.'
+      });
     } catch (err: any) {
-      Swal.fire({
-        title: 'Erro na Saída',
-        text: err.response?.data?.error || 'Erro ao enviar para portaria.',
-        icon: 'error',
-        confirmButtonColor: '#0052cc',
-        customClass: {
-          popup: 'rounded-[2rem] font-brand',
-          confirmButton: 'rounded-xl font-bold uppercase text-xs px-6 py-3'
-        }
+      toast.error('Erro na Saída', {
+        description: err.response?.data?.error || 'Erro ao enviar para portaria.'
       });
     } finally {
       setIsProcessing(false);
@@ -308,16 +295,10 @@ export default function LiderDashboard() {
       setIsAcceptModalOpen(false);
       setItemToAccept(null);
       loadData();
+      toast.success('Transferência Aceita!');
     } catch (err: any) {
-      Swal.fire({
-        title: 'Erro ao Aceitar',
-        text: err.response?.data?.error || 'Erro ao aceitar transferência.',
-        icon: 'error',
-        confirmButtonColor: '#0052cc',
-        customClass: {
-          popup: 'rounded-[2rem] font-brand',
-          confirmButton: 'rounded-xl font-bold uppercase text-xs px-6 py-3'
-        }
+      toast.error('Erro ao Aceitar', {
+        description: err.response?.data?.error || 'Erro ao aceitar transferência.'
       });
     } finally {
       setIsProcessing(false);
@@ -325,60 +306,37 @@ export default function LiderDashboard() {
   };
 
   const handleRejectClick = async (materialId: string) => {
-    const { value: reason, isConfirmed } = await Swal.fire({
+    const result = await confirm({
       title: 'Recusar Transferência?',
-      text: 'Informe o motivo da recusa desta transferência de equipamento:',
-      input: 'textarea',
-      inputPlaceholder: 'Descreva o motivo da recusa (ex: equipamento não solicitado, item avariado, setor incorreto)...',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#e11d48',
-      cancelButtonColor: '#64748b',
-      confirmButtonText: 'Confirmar Recusa',
-      cancelButtonText: 'Voltar',
-      customClass: {
-        popup: 'rounded-[2rem] font-brand',
-        confirmButton: 'rounded-xl font-bold uppercase text-xs px-6 py-3',
-        cancelButton: 'rounded-xl font-bold uppercase text-xs px-6 py-3'
-      },
-      inputValidator: (value) => {
-        if (!value || !value.trim()) {
-          return 'Você precisa informar o motivo da recusa!';
-        }
+      description: 'Informe o motivo da recusa desta transferência de equipamento:',
+      variant: 'danger',
+      confirmText: 'Confirmar Recusa',
+      cancelText: 'Voltar',
+      inputConfig: {
+        type: 'textarea',
+        required: true,
+        placeholder: 'Descreva o motivo da recusa (ex: equipamento não solicitado, item avariado, setor incorreto)...',
+        errorMessage: 'Você precisa informar o motivo da recusa!'
       }
     });
 
-    if (!isConfirmed || !reason) return;
+    if (!result.isConfirmed || !result.value) return;
     
     setIsProcessing(true);
     try {
       await api.post('/lider/recusar-transferencia', {
         materialIds: [materialId],
-        reason: reason.trim()
+        reason: result.value.trim()
       }, {
         headers: { Authorization: `Bearer ${getAuthToken()}` }
       });
-      Swal.fire({
-        title: 'Transferência Recusada!',
-        text: 'O item foi devolvido ao setor de origem e o líder remetente foi notificado com a justificativa.',
-        icon: 'success',
-        confirmButtonColor: '#0052cc',
-        customClass: {
-          popup: 'rounded-[2rem] font-brand',
-          confirmButton: 'rounded-xl font-bold uppercase text-xs px-6 py-3'
-        }
+      toast.success('Transferência Recusada!', {
+        description: 'O item foi devolvido ao setor de origem e o líder remetente foi notificado com a justificativa.'
       });
       loadData();
     } catch (err: any) {
-      Swal.fire({
-        title: 'Erro',
-        text: err.response?.data?.error || 'Erro ao recusar.',
-        icon: 'error',
-        confirmButtonColor: '#0052cc',
-        customClass: {
-          popup: 'rounded-[2rem] font-brand',
-          confirmButton: 'rounded-xl font-bold uppercase text-xs px-6 py-3'
-        }
+      toast.error('Erro', {
+        description: err.response?.data?.error || 'Erro ao recusar.'
       });
     } finally {
       setIsProcessing(false);
@@ -386,20 +344,12 @@ export default function LiderDashboard() {
   };
 
   const handleCancelTransferClick = async (materialId: string) => {
-    const result = await Swal.fire({
+    const result = await confirm({
       title: 'Cancelar Envio?',
-      text: 'O equipamento deixará de estar em trânsito e voltará a ficar disponível no seu setor.',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#e11d48',
-      cancelButtonColor: '#64748b',
-      confirmButtonText: 'Sim, Cancelar Envio',
-      cancelButtonText: 'Voltar',
-      customClass: {
-        popup: 'rounded-[2rem] font-brand',
-        confirmButton: 'rounded-xl font-bold uppercase text-xs px-6 py-3',
-        cancelButton: 'rounded-xl font-bold uppercase text-xs px-6 py-3'
-      }
+      description: 'O equipamento deixará de estar em trânsito e voltará a ficar disponível no seu setor.',
+      variant: 'danger',
+      confirmText: 'Sim, Cancelar Envio',
+      cancelText: 'Voltar'
     });
 
     if (!result.isConfirmed) return;
@@ -411,27 +361,13 @@ export default function LiderDashboard() {
       }, {
         headers: { Authorization: `Bearer ${getAuthToken()}` }
       });
-      Swal.fire({
-        title: 'Envio Cancelado!',
-        text: 'O equipamento retornou ao seu setor. O líder do setor destinatário foi notificado sobre o cancelamento.',
-        icon: 'success',
-        confirmButtonColor: '#0052cc',
-        customClass: {
-          popup: 'rounded-[2rem] font-brand',
-          confirmButton: 'rounded-xl font-bold uppercase text-xs px-6 py-3'
-        }
+      toast.success('Envio Cancelado!', {
+        description: 'O equipamento retornou ao seu setor. O líder do setor destinatário foi notificado sobre o cancelamento.'
       });
       loadData();
     } catch (err: any) {
-      Swal.fire({
-        title: 'Erro',
-        text: err.response?.data?.error || 'Erro ao cancelar envio.',
-        icon: 'error',
-        confirmButtonColor: '#0052cc',
-        customClass: {
-          popup: 'rounded-[2rem] font-brand',
-          confirmButton: 'rounded-xl font-bold uppercase text-xs px-6 py-3'
-        }
+      toast.error('Erro', {
+        description: err.response?.data?.error || 'Erro ao cancelar envio.'
       });
     } finally {
       setIsProcessing(false);
