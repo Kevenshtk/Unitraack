@@ -26,10 +26,10 @@ export const TransferModal: React.FC<TransferModalProps> = ({
 }) => {
   // Obtenção de setores via contexto opcional (presente apenas no perfil Gestor)
   const dashboard = useOptionalDashboard();
-  const contextSectors: any[] = dashboard?.sectors || [];
+  const contextSectors = dashboard?.sectors;
 
   const { profile } = useAuth();
-  const [sectors, setSectors] = useState<any[]>(contextSectors);
+  const [sectors, setSectors] = useState<any[]>(contextSectors || []);
   const [loadingSectors, setLoadingSectors] = useState(false);
   const [selectedParentSector, setSelectedParentSector] = useState('');
   const [selectedSubSector, setSelectedSubSector] = useState('');
@@ -42,19 +42,27 @@ export const TransferModal: React.FC<TransferModalProps> = ({
   useEffect(() => {
     if (contextSectors && contextSectors.length > 0) {
       setSectors(contextSectors);
-    } else {
-      setLoadingSectors(true);
-      requestService.getSectors()
-        .then(list => {
-          if (Array.isArray(list)) {
-            setSectors(list);
-          }
-        })
-        .catch(err => {
-          console.error('[TransferModal] Erro ao carregar setores:', err);
-        })
-        .finally(() => setLoadingSectors(false));
+      return;
     }
+
+    let isMounted = true;
+    setLoadingSectors(true);
+    requestService.getSectors()
+      .then(list => {
+        if (isMounted && Array.isArray(list)) {
+          setSectors(list);
+        }
+      })
+      .catch(err => {
+        console.error('[TransferModal] Erro ao carregar setores:', err);
+      })
+      .finally(() => {
+        if (isMounted) setLoadingSectors(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, [contextSectors]);
 
   // Identifica o setor de origem (onde o material já está alocado)
