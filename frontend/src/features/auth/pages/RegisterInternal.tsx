@@ -35,6 +35,7 @@ export default function RegisterInternal() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
+    confirmPassword: '',
     fullName: '',
     registrationNumber: '',
     sector: '',
@@ -69,21 +70,59 @@ export default function RegisterInternal() {
       return;
     }
 
+    if (!formData.registrationNumber || !formData.registrationNumber.trim()) {
+      setError('Por favor, informe o número de matrícula.');
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('As senhas não coincidem!');
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setError('A senha deve ter no mínimo 6 caracteres.');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
     try {
+      const slug = tenantSlug || tenant?.subdomain || '';
       const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/register`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'X-Tenant-Slug': tenantSlug || ''
+          'X-Tenant-Slug': slug
         },
-        body: JSON.stringify({ ...formData, role })
+        body: JSON.stringify({ 
+          ...formData, 
+          role,
+          tenantId: tenant?.id,
+          usinaCnpj: formData.usinaCnpj || tenant?.cnpj || ''
+        })
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Erro no cadastro interno.');
+      if (!response.ok) {
+        const errorText = data.error || data.message || 'Erro no cadastro interno.';
+        if (
+          /already registered/i.test(errorText) ||
+          /user already exists/i.test(errorText) ||
+          /email.*already.*(exist|registered)/i.test(errorText) ||
+          /already been registered/i.test(errorText) ||
+          /e-?mail j[áa] (est[áa] )?cadastrado/i.test(errorText) ||
+          data.code === 'user_already_exists' ||
+          data.code === 'email_exists'
+        ) {
+          throw new Error('Este e-mail já está cadastrado no sistema.');
+        }
+        if (/matr[íi]cula/i.test(errorText)) {
+          throw new Error('Este número de matrícula já está cadastrado no sistema.');
+        }
+        throw new Error(errorText);
+      }
 
       setSuccess(true);
       setTimeout(() => navigate(`/${tenantSlug || 'unknown'}/login`), 3000);
@@ -157,19 +196,21 @@ export default function RegisterInternal() {
 
             <div className="relative z-10 flex flex-col h-full">
               <div className="mb-auto">
-                <div className="h-16 lg:h-20 flex items-center mb-6">
-                  {tenant?.logo_url ? (
+                <div className="h-16 lg:h-20 flex items-center mb-4">
+                  {(tenant?.logo_url || (tenantSlug === 'usina-lins' || tenant?.subdomain === 'usina-lins')) ? (
                     <img 
-                      src={tenant.logo_url} 
-                      alt={tenant?.name || "Logo"} 
-                      className="max-h-full max-w-[200px] object-contain drop-shadow-md" 
+                      src={(tenantSlug === 'usina-lins' || tenant?.subdomain === 'usina-lins') && (!tenant?.logo_url || tenant.logo_url.includes('cropped-Lins_Logo')) ? '/logo-lins-white.png' : (tenant?.logo_url || '/logo-lins-white.png')} 
+                      alt={tenant?.name || 'Usina Lins'} 
+                      className="h-12 lg:h-14 w-auto max-w-[270px] object-contain drop-shadow-md" 
                     />
                   ) : (
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white font-black text-xl shadow-lg">
-                        {tenant?.name?.[0] || 'U'}
+                      <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-white font-bold text-xl backdrop-blur-md">
+                        {(tenant?.name || 'U')[0]}
                       </div>
-                      <span className="text-white font-black text-xl tracking-tight uppercase">{tenant?.name || 'Usina'}</span>
+                      <span className="font-bold text-white text-lg tracking-tight">
+                        {tenant?.name || 'Portal Interno'}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -241,14 +282,25 @@ export default function RegisterInternal() {
                     placeholder="seu.nome@linsagro.com.br" 
                   />
                   
-                  <InputGroup 
-                    label="Senha de Acesso" 
-                    icon={<Lock className="w-4 h-4" />}
-                    type="password" 
-                    value={formData.password} 
-                    onChange={v => setFormData({...formData, password: v})} 
-                    placeholder="••••••••" 
-                  />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <InputGroup 
+                      label="Senha de Acesso" 
+                      icon={<Lock className="w-4 h-4" />}
+                      type="password" 
+                      value={formData.password} 
+                      onChange={v => setFormData({...formData, password: v})} 
+                      placeholder="Mínimo 6 caracteres" 
+                    />
+
+                    <InputGroup 
+                      label="Confirmar Senha" 
+                      icon={<Lock className="w-4 h-4" />}
+                      type="password" 
+                      value={formData.confirmPassword} 
+                      onChange={v => setFormData({...formData, confirmPassword: v})} 
+                      placeholder="Repita a senha" 
+                    />
+                  </div>
                   
                   <div className="grid grid-cols-2 gap-4 pt-2">
                     <InputGroup 

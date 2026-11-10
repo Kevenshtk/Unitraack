@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { X, ShieldCheck, Loader2, Package, Camera, Hash } from 'lucide-react';
+import { useAuth } from '../../../../contexts/AuthContext';
+import { toast } from 'sonner';
 
 interface AcceptModalProps {
   materialName: string;
@@ -14,6 +16,7 @@ export const AcceptModal: React.FC<AcceptModalProps> = ({
   onConfirm,
   isProcessing
 }) => {
+  const { profile } = useAuth();
   const [signature, setSignature] = useState('');
   const [photos, setPhotos] = useState<string[]>([]);
 
@@ -34,8 +37,33 @@ export const AcceptModal: React.FC<AcceptModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!signature) return;
-    onConfirm(signature, photos.length > 0 ? photos : undefined);
+    const cleanSignature = signature.trim().toUpperCase();
+    const userReg = profile?.registration_number?.trim().toUpperCase();
+
+    if (!cleanSignature) {
+      toast.warning('Matrícula Obrigatória', {
+        description: 'Por favor, informe a matrícula do responsável para confirmar o recebimento.'
+      });
+      return;
+    }
+
+    if (profile?.role !== 'SUPER_ADMIN') {
+      if (!userReg) {
+        toast.error('Matrícula Não Cadastrada', {
+          description: 'Seu usuário não possui matrícula cadastrada no sistema. Contate o administrador.'
+        });
+        return;
+      }
+
+      if (cleanSignature !== userReg) {
+        toast.error('Matrícula Inválida!', {
+          description: 'A matrícula informada não confere com o responsável por este setor.'
+        });
+        return;
+      }
+    }
+
+    onConfirm(signature.trim(), photos.length > 0 ? photos : undefined);
   };
 
   return (

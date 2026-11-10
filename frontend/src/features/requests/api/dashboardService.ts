@@ -11,16 +11,6 @@ export const dashboardService = {
     return response.data;
   },
 
-  async approveRequest(requestId: string) {
-    const response = await api.post(`/gestor/approve/${requestId}`);
-    return response.data;
-  },
-
-  async rejectRequest(requestId: string, reason: string) {
-    const response = await api.post(`/gestor/reject/${requestId}`, { reason });
-    return response.data;
-  },
-
   async updateMaterialPosition(materialId: string, x: number, y: number) {
     const response = await api.post('/gestor/material-position', {
       material_id: materialId,
@@ -37,6 +27,11 @@ export const dashboardService = {
 
   async getThirdPartyStats() {
     const response = await api.get('/gestor/third-parties');
+    return response.data;
+  },
+
+  async getAuditReport(profileId: string) {
+    const response = await api.get(`/gestor/audit-report?profileId=${profileId}`);
     return response.data;
   }
 };

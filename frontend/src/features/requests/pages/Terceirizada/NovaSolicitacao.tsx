@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { getAuthToken } from '../../../../utils/subdomain';
+import { getTenantLogoUrl } from '../../../../utils/subdomain';
 import { supabase } from '../../../../lib/supabase';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { useTenant } from '../../../../contexts/TenantContext';
@@ -17,10 +17,24 @@ import {
   MapPin,
   ChevronDown,
   Check,
-  AlertCircle
+  AlertCircle,
+  Search
 } from 'lucide-react';
-import axios from 'axios';
-// Removida importação do SignaturePad
+import { requestService } from '../../api/requestService';
+import { compressImage } from '../../../../utils/imageCompressor';
+import { toast } from 'sonner';
+
+const dataUrlToBlob = (dataUrl: string): Blob => {
+  const arr = dataUrl.split(',');
+  const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new Blob([u8arr], { type: mime });
+};
 
 interface MaterialItem {
   id: string;
@@ -30,14 +44,15 @@ interface MaterialItem {
   serial_number: string;
   description: string;
   condition: string;
-  code: string;
+  code?: string;
   imageUrl: string;
+  previewUrl?: string;
   uploading: boolean;
 }
 
 export default function NovaSolicitacao() {
   const { user, profile } = useAuth();
-  const { slug: tenantSlug } = useTenant();
+  const { tenant, slug: tenantSlug } = useTenant();
   const navigate = useNavigate();
   const location = useLocation();
   const editMode = location.state?.editMode || false;
@@ -69,7 +84,6 @@ export default function NovaSolicitacao() {
           serial_number: m.serial_number || '',
           description: m.description || '',
           condition: m.condition || 'USADO',
-          code: m.code || '',
           imageUrl: m.image_url || '',
           uploading: false
         })));
@@ -78,7 +92,6 @@ export default function NovaSolicitacao() {
   }, [editMode, editRequest]);
 
   useEffect(() => {
-    fetchProfile();
     fetchSectors();
   }, [user]);
 
@@ -100,10 +113,8 @@ export default function NovaSolicitacao() {
 
   const fetchSectors = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/sectors`, {
-        headers: { 'Authorization': `Bearer ${getAuthToken()}` }
-      });
-      setSectors(response.data.data || []);
+      const data = await requestService.getSectors();
+      setSectors(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Erro ao carregar setores:', err);
     }
@@ -115,19 +126,6 @@ export default function NovaSolicitacao() {
         setPlate(editRequest.plate || '');
      }
   }, [editMode, editRequest]);
-
-  const fetchProfile = async () => {
-    if (!user) return;
-    try {
-      await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-    } catch (err) {
-      console.error('Erro ao carregar perfil:', err);
-    }
-  };
 
   const addMaterial = () => {
     const newItem: MaterialItem = {
@@ -153,21 +151,33 @@ export default function NovaSolicitacao() {
     setMaterials(prev => prev.map(m => m.id === id ? { ...m, [field]: value } : m));
   };
 
+  const clearMaterialImage = (id: string) => {
+    setMaterials(prev => prev.map(m => m.id === id ? { ...m, imageUrl: '', previewUrl: '' } : m));
+  };
+
   const handleFileUpload = async (id: string, file: File) => {
     if (!file) return;
 
+    // 1. Preview local instantâneo
     const localBlobUrl = URL.createObjectURL(file);
-    updateMaterial(id, 'imageUrl', localBlobUrl);
+    updateMaterial(id, 'previewUrl', localBlobUrl);
     updateMaterial(id, 'uploading', true);
 
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${id}-${Date.now()}.${fileExt}`;
+      // 2. Comprimir e otimizar imagem para JPEG universal (evita limites de upload e converte formatos de celular como HEIC)
+      const compressedDataUrl = await compressImage(file, 1600, 0.85);
+      const compressedBlob = dataUrlToBlob(compressedDataUrl);
+
+      const fileName = `${id}-${Date.now()}.jpg`;
       const filePath = `requests/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('material-images')
-        .upload(filePath, file, { cacheControl: '3600', upsert: false });
+        .upload(filePath, compressedBlob, { 
+          contentType: 'image/jpeg',
+          cacheControl: '3600', 
+          upsert: true 
+        });
 
       if (uploadError) throw uploadError;
 
@@ -175,11 +185,15 @@ export default function NovaSolicitacao() {
         .from('material-images')
         .getPublicUrl(filePath);
 
+      // Define a URL pública definitiva apenas após a confirmação do upload no servidor
       updateMaterial(id, 'imageUrl', publicUrl);
     } catch (err: any) {
-      console.error('Erro no upload:', err);
+      console.error('Erro no upload da imagem:', err);
       updateMaterial(id, 'imageUrl', '');
-      setErrorMessage('Falha ao subir a imagem no servidor. Verifique sua conexão.');
+      updateMaterial(id, 'previewUrl', '');
+      const uploadErrMsg = 'Falha ao subir a imagem no servidor. Verifique sua conexão e tente novamente.';
+      setErrorMessage(uploadErrMsg);
+      toast.error(uploadErrMsg);
     } finally {
       updateMaterial(id, 'uploading', false);
     }
@@ -188,23 +202,39 @@ export default function NovaSolicitacao() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (materials.length === 0) {
-      setErrorMessage('Adicione pelo menos um equipamento para continuar.');
+      const msg = 'Adicione pelo menos um equipamento para continuar.';
+      setErrorMessage(msg);
+      toast.warning(msg);
       return;
     }
 
     if (!parentSectorId || !sectorId) {
-      setErrorMessage('Por favor, selecione o Setor Geral e o Local Específico.');
+      const msg = 'Por favor, selecione o Setor Geral e o Local Específico.';
+      setErrorMessage(msg);
+      toast.warning(msg);
       return;
     }
 
     if (!driverName || !plate) {
-      setErrorMessage('Por favor, informe o Nome do Motorista e a Placa do Veículo.');
+      const msg = 'Por favor, informe o Nome do Motorista e a Placa do Veículo.';
+      setErrorMessage(msg);
+      toast.warning(msg);
       return;
     }
 
-    const itemDeFalta = materials.find((m) => !m.imageUrl);
+    const isAnyUploading = materials.some((m) => m.uploading);
+    if (isAnyUploading) {
+      const msg = 'Aguarde o envio das fotos para o servidor terminar antes de efetuar a solicitação.';
+      setErrorMessage(msg);
+      toast.warning(msg);
+      return;
+    }
+
+    const itemDeFalta = materials.find((m) => !m.imageUrl || m.imageUrl.startsWith('blob:'));
     if (itemDeFalta) {
-      setErrorMessage(`Você esqueceu de anexar a foto de um dos equipamentos.`);
+      const msg = 'Uma foto do equipamento ainda não foi salva no servidor. Por favor, anexe novamente.';
+      setErrorMessage(msg);
+      toast.warning(msg);
       return;
     }
 
@@ -223,23 +253,13 @@ export default function NovaSolicitacao() {
       };
 
 
-      const url = editMode 
-        ? `${import.meta.env.VITE_API_URL}/terceirizada/requisicao/${editRequest.id}`
-        : `${import.meta.env.VITE_API_URL}/terceirizada/requisicao`;
-
-      const method = editMode ? 'put' : 'post';
-
-      const response = await axios({
-        method,
-        url,
-        data: payload,
-        headers: {
-          'Authorization': `Bearer ${getAuthToken()}`
-        }
-      });
+      const response = editMode
+        ? await requestService.updateRequest(editRequest.id, payload)
+        : await requestService.createRequest(payload);
 
       if (response.status === 201 || response.status === 200) {
         setShowSuccess(true);
+        toast.success(editMode ? 'Solicitação atualizada com sucesso!' : 'Solicitação enviada com sucesso!');
         setTimeout(() => {
           const slug = tenantSlug || profile?.tenant?.subdomain || 'painel';
           const rolePath = profile?.role?.toLowerCase().replace('_', '-') || 'terceirizada';
@@ -251,7 +271,9 @@ export default function NovaSolicitacao() {
         }, 3000);
       }
     } catch (err: any) {
-      setErrorMessage(err.response?.data?.error || 'Ocorreu um erro ao enviar sua solicitação.');
+      const errMsg = err.response?.data?.error || 'Ocorreu um erro ao enviar sua solicitação.';
+      setErrorMessage(errMsg);
+      toast.error(errMsg);
     } finally {
       setSubmitting(false);
     }
@@ -313,11 +335,18 @@ export default function NovaSolicitacao() {
                 <ArrowLeft className="w-5 h-5" />
              </button>
              <div className="h-6 w-px bg-slate-100 mx-1"></div>
-             <img 
-              src="https://linsagro.com.br/wp-content/uploads/2022/07/cropped-Lins_Logo_Horizontal_RGB_Preferencial_20250512_Keenwork_AF.png" 
-              alt="Lins" 
-              className="h-9"
-            />
+             {tenant || profile?.tenant ? (
+               <img 
+                 src={getTenantLogoUrl(tenant || profile?.tenant, false)} 
+                 alt={tenant?.name || profile?.tenant?.name || 'Usina Lins'} 
+                 className="h-9 object-contain max-w-[170px]" 
+                 onError={(e) => { e.currentTarget.src = '/logo-lins.png'; }} 
+               />
+             ) : (
+               <span className="font-bold text-navy text-sm uppercase tracking-tight">
+                 Usina Lins
+               </span>
+             )}
           </div>
           <div className="hidden sm:flex items-center gap-3">
              <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest leading-none">Status Autenticado</span>
@@ -340,11 +369,13 @@ export default function NovaSolicitacao() {
           </div>
 
            {/* Core Info Section */}
-          <div className="bg-white rounded-[2rem] p-12 shadow-[0_32px_64px_-12px_rgba(0,50,160,0.08)] border border-slate-100 relative overflow-hidden group">
-             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-full -mr-10 -mt-10 opacity-50 group-hover:scale-110 transition-transform"></div>
+          <div className="bg-white rounded-[2rem] p-12 shadow-[0_32px_64px_-12px_rgba(0,50,160,0.08)] border border-slate-100 relative group z-20">
+             <div className="absolute inset-0 rounded-[2rem] overflow-hidden pointer-events-none">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-full -mr-10 -mt-10 opacity-50 group-hover:scale-110 transition-transform"></div>
+             </div>
              
              <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8 mb-10 items-end relative z-30">
-                <div className="space-y-3">
+                <div className="space-y-3 relative">
                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 tracking-[0.15em] flex items-center gap-2">
                       <div className="w-5 h-5 bg-primary/10 rounded-md flex items-center justify-center">
                         <MapPin className="w-3 h-3 text-primary" />
@@ -363,7 +394,7 @@ export default function NovaSolicitacao() {
                    />
                 </div>
 
-                <div className="space-y-3 relative z-40">
+                <div className="space-y-3 relative">
                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 tracking-[0.15em] flex items-center gap-2">
                       <div className="w-5 h-5 bg-primary/10 rounded-md flex items-center justify-center">
                         <MapPin className="w-3 h-3 text-primary" />
@@ -461,26 +492,44 @@ export default function NovaSolicitacao() {
 
             <div className="grid grid-cols-1 gap-6">
               {materials.map((mat, index) => (
-                <div key={mat.id} className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 hover:border-primary/30 transition-all group animate-in fade-in slide-in-from-top-4">
-                  <div className="flex items-center justify-between mb-8 border-b border-slate-50 pb-6">
+                <div key={mat.id} className="bg-white rounded-2xl p-5 sm:p-8 shadow-sm border border-slate-100 hover:border-primary/30 transition-all group animate-in fade-in slide-in-from-top-4">
+                  <div className="flex items-center justify-between mb-5 sm:mb-8 border-b border-slate-50 pb-4 sm:pb-6">
                     <span className="bg-navy text-white text-[10px] font-bold px-4 py-1.5 rounded-full uppercase tracking-widest">Equipamento #{index + 1}</span>
                     <button type="button" onClick={() => removeMaterial(mat.id)} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all cursor-pointer">
                       <Trash2 className="w-5 h-5" />
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-10">
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-10">
                     <div className="md:col-span-3">
-                       <div className="relative aspect-square bg-[#F8FAFC] border border-slate-100 rounded-2xl overflow-hidden group/img flex flex-col items-center justify-center text-center p-4">
-                          {mat.imageUrl ? (
+                       <div className="relative aspect-square max-w-[260px] md:max-w-none mx-auto w-full bg-[#F8FAFC] border border-slate-100 rounded-2xl overflow-hidden group/img flex flex-col items-center justify-center text-center p-2 sm:p-3 shadow-inner">
+                          {(mat.imageUrl || mat.previewUrl) ? (
                             <>
-                              <img src={mat.imageUrl} alt="Material" className="w-full h-full object-cover" />
-                              <button type="button" onClick={() => updateMaterial(mat.id, 'imageUrl', '')} className="absolute inset-0 bg-red-500/80 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
-                                 <Trash2 className="text-white" />
-                              </button>
+                              <img 
+                                src={mat.imageUrl || mat.previewUrl} 
+                                alt="Material" 
+                                className={`w-full h-full object-contain transition-opacity ${mat.uploading ? 'opacity-50 blur-[1px]' : 'opacity-100'}`} 
+                              />
+                              {mat.uploading ? (
+                                <div className="absolute inset-0 bg-navy/60 backdrop-blur-xs flex flex-col items-center justify-center gap-2 p-2">
+                                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                                  <span className="text-[9px] font-bold text-white uppercase tracking-wider text-center">
+                                    Enviando foto...
+                                  </span>
+                                </div>
+                              ) : (
+                                <button 
+                                  type="button" 
+                                  onClick={() => clearMaterialImage(mat.id)} 
+                                  className="absolute top-2 right-2 md:inset-0 bg-red-500/90 md:bg-red-500/80 text-white md:opacity-0 md:group-hover/img:opacity-100 transition-opacity flex items-center justify-center rounded-xl md:rounded-none p-2 md:p-0 cursor-pointer shadow-sm"
+                                  title="Remover foto"
+                                >
+                                   <Trash2 className="text-white w-4 h-4 md:w-6 md:h-6" />
+                                </button>
+                              )}
                             </>
                           ) : (
-                             <label className="cursor-pointer w-full h-full flex flex-col items-center justify-center hover:bg-slate-100 transition-colors gap-2">
+                             <label className="cursor-pointer w-full h-full flex flex-col items-center justify-center hover:bg-slate-100 transition-colors gap-2 p-3">
                                 {mat.uploading ? <Loader2 className="w-10 h-10 animate-spin text-primary opacity-20" /> : <Camera className="w-10 h-10 text-slate-200" />}
                                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Foto / Upload</p>
                                 <span className="text-[8px] text-red-500 uppercase font-bold tracking-widest mt-1 bg-red-50 px-2 py-1 rounded-full">(Foto Obrigatória)</span>
@@ -526,10 +575,17 @@ export default function NovaSolicitacao() {
           <div className="pt-10 border-t border-slate-100 flex flex-col items-center">
              <button 
                 type="submit" 
-                disabled={submitting}
+                disabled={submitting || materials.some(m => m.uploading)}
                 className="w-full max-w-sm py-6 bg-[#0032A0] hover:bg-[#002880] text-white font-bold uppercase tracking-widest rounded-xl shadow-xl shadow-navy/20 flex items-center justify-center gap-4 transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
              >
-                {submitting ? <Loader2 className="w-6 h-6 animate-spin" /> : (
+                {submitting ? (
+                  <Loader2 className="w-6 h-6 animate-spin" />
+                ) : materials.some(m => m.uploading) ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin text-white" />
+                    <span>ENVIANDO FOTOS...</span>
+                  </>
+                ) : (
                   <>
                      {editMode ? 'SALVAR ALTERAÇÕES' : 'EFETUAR SOLICITAÇÃO'}
                      <Save className="w-5 h-5 text-primary" />
@@ -569,8 +625,10 @@ function ShieldCheck({ className }: { className: string }) {
   );
 }
 
-function CustomSelect({ value, onChange, options, placeholder, direction = 'down', disabled = false }: any) {
+function CustomSelect({ value, onChange, options, placeholder, direction = 'auto', disabled = false }: any) {
   const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [openUp, setOpenUp] = useState(direction === 'up');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -583,18 +641,50 @@ function CustomSelect({ value, onChange, options, placeholder, direction = 'down
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (isOpen && dropdownRef.current) {
+      if (direction === 'up') {
+        setOpenUp(true);
+      } else if (direction === 'down') {
+        setOpenUp(false);
+      } else {
+        const rect = dropdownRef.current.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        setOpenUp(spaceBelow < 280 && rect.top > 250);
+      }
+    } else {
+      setSearchTerm('');
+    }
+  }, [isOpen, direction]);
+
   let selectedLabel = placeholder;
   for (const group of options) {
     if (group.type === 'option' && group.value === value) {
       selectedLabel = group.label;
     } else if (group.type === 'group') {
-      const found = group.items.find((i: any) => i.value === value);
+      const found = group.items?.find((i: any) => i.value === value);
       if (found) selectedLabel = found.label;
     }
   }
 
+  const filteredOptions = options.filter((opt: any) => {
+    if (!searchTerm) return true;
+    if (opt.type === 'group') {
+      return opt.items?.some((item: any) => item.label?.toLowerCase().includes(searchTerm.toLowerCase()));
+    }
+    return opt.label?.toLowerCase().includes(searchTerm.toLowerCase());
+  }).map((opt: any) => {
+    if (opt.type === 'group' && searchTerm) {
+      return {
+        ...opt,
+        items: opt.items.filter((item: any) => item.label?.toLowerCase().includes(searchTerm.toLowerCase()))
+      };
+    }
+    return opt;
+  });
+
   return (
-    <div className={`relative w-full ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`} ref={dropdownRef}>
+    <div className={`relative w-full ${isOpen ? 'z-[60]' : 'z-10'} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`} ref={dropdownRef}>
       <div 
         onClick={() => !disabled && setIsOpen(!isOpen)}
         className={`w-full px-6 py-4 bg-white border ${isOpen ? 'border-primary shadow-[0_0_0_4px_rgba(0,50,160,0.05)]' : 'border-slate-100 shadow-sm'} rounded-2xl text-navy font-bold text-sm cursor-pointer flex items-center justify-between hover:border-primary/30 transition-all select-none uppercase tracking-tight`}
@@ -604,20 +694,35 @@ function CustomSelect({ value, onChange, options, placeholder, direction = 'down
       </div>
 
       {isOpen && (
-        <div className={`absolute ${direction === 'up' ? 'bottom-[calc(100%+12px)]' : 'top-[calc(100%+12px)]'} left-0 right-0 bg-white/95 backdrop-blur-xl border border-slate-100 rounded-2xl shadow-[0_20px_50px_rgba(0,50,160,0.15)] z-[100] animate-in fade-in slide-in-from-top-2 duration-200 max-h-80 overflow-hidden flex flex-col`}>
+        <div className={`absolute ${openUp ? 'bottom-[calc(100%+12px)]' : 'top-[calc(100%+12px)]'} left-0 right-0 bg-white/95 backdrop-blur-xl border border-slate-100 rounded-2xl shadow-[0_20px_50px_rgba(0,50,160,0.15)] z-[100] animate-in fade-in slide-in-from-top-2 duration-200 max-h-80 overflow-hidden flex flex-col`}>
+          {options.length > 5 && (
+            <div className="p-3 border-b border-slate-100 bg-slate-50/60" onClick={e => e.stopPropagation()}>
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input 
+                  type="text" 
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  placeholder="FILTRAR OPÇÕES..." 
+                  className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-navy placeholder:text-slate-300 focus:outline-none focus:border-primary transition-all uppercase"
+                  autoFocus
+                />
+              </div>
+            </div>
+          )}
           <div className="overflow-y-auto custom-scrollbar flex-1">
-            {options.length === 0 ? (
+            {filteredOptions.length === 0 ? (
               <div className="px-6 py-8 text-center">
                  <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Nenhuma opção encontrada</p>
               </div>
-            ) : options.map((opt: any, i: number) => {
+            ) : filteredOptions.map((opt: any, i: number) => {
               if (opt.type === 'group') {
                 return (
                   <div key={i} className="border-b border-slate-50 last:border-0">
                     <div className="px-6 pt-4 pb-2 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 bg-slate-50/50">
                       {opt.label}
                     </div>
-                    {opt.items.map((item: any) => (
+                    {opt.items?.map((item: any) => (
                       <div 
                         key={item.value}
                         onClick={() => { onChange(item.value); setIsOpen(false); }}
